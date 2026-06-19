@@ -12,6 +12,21 @@ Every poll cycle, the pipeline fetches the latest power generation, emissions in
 
 ---
 
+## Pipeline
+
+```mermaid
+flowchart TD
+    A[Open Electricity\nREST API] --> B[Fetch + Transform\nPolars]
+    B --> C{Delta Detection\nskip unchanged records}
+    C -->|new data| D[HiveMQ Cloud\nMQTT QoS 1]
+    C -->|new data| E[(Neon PostgreSQL\nfact_market)]
+    D --> F[Live Dashboard\nipyleaflet map · ipywidgets]
+    E --> F
+    G[(A1 DB\ngeo_regions · dim_facility)] --> F
+```
+
+---
+
 ## Architecture
 
 ```
