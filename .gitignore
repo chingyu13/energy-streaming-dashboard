@@ -1,9 +1,0 @@
-.env
-.DS_Store
-__pycache__/
-*.pyc
-*.ipynb_checkpoints/
-.ipynb_checkpoints/
-
-# Report PDF — not for public repo
-streaming_Report.pdf
