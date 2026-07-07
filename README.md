@@ -1,7 +1,7 @@
 # Real-Time Energy Streaming Dashboard
 
 > **Part 2 of the Australian Energy Data Platform** — the real-time layer.
-> `[➊ Batch ETL](../energy-etl-pipeline)` → **Neon PostgreSQL + PostGIS** → `➋ Real-time streaming dashboard (this repo)`
+> [➊ Batch ETL](../energy-etl-pipeline) → **Neon PostgreSQL + PostGIS** → ➋ Real-time streaming dashboard (this repo)
 >
 > This dashboard consumes the `dim_facility` and `geo_regions` tables built by the batch ETL pipeline to geospatially enrich a live MQTT stream of NEM market data.
 
@@ -45,7 +45,7 @@ The pipeline is split into four decoupled phases so ingestion, publishing, and v
 
 Stability is handled by `nest_asyncio.apply()` (prevents the Jupyter kernel from blocking the async `OEClient()` event loop) and credential protection via `python-dotenv` + a `.env` file.
 
-System architecture — four decoupled phases from API retrieval to live dashboard
+![System architecture — four decoupled phases from API retrieval to live dashboard](./assets/system_architecture.png)
 
 ---
 
@@ -72,7 +72,7 @@ Records are streamed reliably from a background daemon thread while the notebook
 - **Max inflight = 50** — at most 50 unacknowledged messages in flight; the publisher blocks for the oldest ACK before sending more, applying backpressure
 - **Background thread** — `_publish_loop()` sorts by timestamp, groups records into 5-minute batches, publishes each, then drains pending messages and disconnects cleanly
 
-MQTT publish flow — async thread, per-interval batching, and inflight-window backpressure
+![MQTT publish flow — async thread, per-interval batching, and inflight-window backpressure](./assets/flowchart_mqtt_publish.png)
 
 ---
 
@@ -80,11 +80,11 @@ MQTT publish flow — async thread, per-interval batching, and inflight-window b
 
 The subscriber runs in the background via `loop_start()` and keeps the dashboard fed without freezing the kernel:
 
-- `**on_connect()`** — connects to the broker and subscribes to the stream topic
-- `**on_message()**` — unpacks each payload and writes it to the shared store as it arrives
-- `**mqtt_data_lock**` — guards the shared buffer so reads and writes never collide, keeping state consistent under concurrent updates
+- **`on_connect()`** — connects to the broker and subscribes to the stream topic
+- **`on_message()`** — unpacks each payload and writes it to the shared store as it arrives
+- **`mqtt_data_lock`** — guards the shared buffer so reads and writes never collide, keeping state consistent under concurrent updates
 
-MQTT subscribe flow — background loop with on_connect / on_message callbacks
+![MQTT subscribe flow — background loop with on_connect / on_message callbacks](./assets/flowchart_mqtt_subscribe.png)
 
 ---
 
@@ -94,19 +94,21 @@ A vertical layout of four stacked layers, all refreshed by a background polling 
 
 **L1 · Header** — toggle circle-sizing between Power (MW) and Emissions (tCO2); dropdowns filter by region and fuel.
 
-Header layer — circle-size toggles and region/fuel filters
+![Header layer — circle-size toggles and region/fuel filters](./assets/l1_header_layer.png)
 
 **L2 · Map** — an interactive map with dynamic circle markers. Clicking a facility opens a "lazy" popup card that refreshes to the latest live values on open.
 
-Map layer — dynamic circle markers across the NEMFacility popup card — latest live power, emissions, price, and demand
+![Map layer — dynamic circle markers across the NEM](./assets/l2_map_layer1.png)
+
+![Facility popup card — latest live power, emissions, price, and demand](./assets/l2_map_layer2.png)
 
 **L3 · Table** — real-time facility data in a scrollable table; clicking any column header sorts ascending/descending.
 
-Table layer — sortable real-time facility metrics
+![Table layer — sortable real-time facility metrics](./assets/l3_table_layer.png)
 
 **L4 · Info** — separates the *data record timestamp* from the *last refresh timestamp* to make late-arriving MQTT messages obvious.
 
-Info layer — data-record vs last-refresh timestamps
+![Info layer — data-record vs last-refresh timestamps](./assets/l4_info_layer.jpg)
 
 **Performance & correctness** — optimised for 500+ facilities with batched marker creation and selective updates (only redraw when values change), a snapshot pattern behind `mqtt_data_lock` to avoid race conditions, and re-run-safe teardown (old poll timers stopped and observers re-bound before rebuilding the layout).
 
