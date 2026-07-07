@@ -1,11 +1,11 @@
 # Real-Time Energy Streaming Dashboard
 
 > **Part 2 of the Australian Energy Data Platform** — the real-time layer.
-> [`➊ Batch ETL`](../energy-etl-pipeline) → **Neon PostgreSQL + PostGIS** → `➋ Real-time streaming dashboard (this repo)`
+> `[➊ Batch ETL](../energy-etl-pipeline)` → **Neon PostgreSQL + PostGIS** → `➋ Real-time streaming dashboard (this repo)`
 >
 > This dashboard consumes the `dim_facility` and `geo_regions` tables built by the batch ETL pipeline to geospatially enrich a live MQTT stream of NEM market data.
 
-A live streaming pipeline and interactive dashboard that pulls Australian NEM (National Electricity Market) data from a REST API, publishes it over MQTT, stores it in a cloud database, and visualises it on an interactive map — built as part of COMP5339 Data Engineering at the University of Sydney.
+A live streaming pipeline and interactive dashboard that pulls Australian NEM (National Electricity Market) data from a REST API, publishes it over MQTT, stores it in a cloud database, and visualises it on an interactive map.
 
 Solo project.
 
@@ -30,6 +30,8 @@ flowchart TD
     G[(A1 DB\ngeo_regions · dim_facility)] --> F
 ```
 
+
+
 ---
 
 ## Architecture
@@ -43,7 +45,7 @@ The pipeline is split into four decoupled phases so ingestion, publishing, and v
 
 Stability is handled by `nest_asyncio.apply()` (prevents the Jupyter kernel from blocking the async `OEClient()` event loop) and credential protection via `python-dotenv` + a `.env` file.
 
-![System architecture — four decoupled phases from API retrieval to live dashboard](./assets/system_architecture.png)
+System architecture — four decoupled phases from API retrieval to live dashboard
 
 ---
 
@@ -52,6 +54,7 @@ Stability is handled by `nest_asyncio.apply()` (prevents the Jupyter kernel from
 **Acquisition under free-tier limits** — the API enforces payload thresholds that trigger request-timeout errors, so extraction processes facilities in **batches of 30**, pulling long-range history incrementally to bypass transmission constraints without data loss.
 
 **Cleaning strategy** — four core anomalies are addressed before publishing:
+
 - **Deduplication** — drops repeated rows from API batches on unique `(interval, facility_code)`
 - **Anomaly rectification** — negative emission metrics clipped to `0`; out-of-scope timestamps and non-operational facilities filtered out
 - **Missing-value imputation** — forward-fill followed by backward-fill to maintain continuous streams
@@ -69,7 +72,7 @@ Records are streamed reliably from a background daemon thread while the notebook
 - **Max inflight = 50** — at most 50 unacknowledged messages in flight; the publisher blocks for the oldest ACK before sending more, applying backpressure
 - **Background thread** — `_publish_loop()` sorts by timestamp, groups records into 5-minute batches, publishes each, then drains pending messages and disconnects cleanly
 
-![MQTT publish flow — async thread, per-interval batching, and inflight-window backpressure](./assets/flowchart_mqtt_publish.png)
+MQTT publish flow — async thread, per-interval batching, and inflight-window backpressure
 
 ---
 
@@ -77,11 +80,11 @@ Records are streamed reliably from a background daemon thread while the notebook
 
 The subscriber runs in the background via `loop_start()` and keeps the dashboard fed without freezing the kernel:
 
-- **`on_connect()`** — connects to the broker and subscribes to the stream topic
-- **`on_message()`** — unpacks each payload and writes it to the shared store as it arrives
-- **`mqtt_data_lock`** — guards the shared buffer so reads and writes never collide, keeping state consistent under concurrent updates
+- `**on_connect()`** — connects to the broker and subscribes to the stream topic
+- `**on_message()**` — unpacks each payload and writes it to the shared store as it arrives
+- `**mqtt_data_lock**` — guards the shared buffer so reads and writes never collide, keeping state consistent under concurrent updates
 
-![MQTT subscribe flow — background loop with on_connect / on_message callbacks](./assets/flowchart_mqtt_subscribe.png)
+MQTT subscribe flow — background loop with on_connect / on_message callbacks
 
 ---
 
@@ -91,21 +94,19 @@ A vertical layout of four stacked layers, all refreshed by a background polling 
 
 **L1 · Header** — toggle circle-sizing between Power (MW) and Emissions (tCO2); dropdowns filter by region and fuel.
 
-![Header layer — circle-size toggles and region/fuel filters](./assets/l1_header_layer.png)
+Header layer — circle-size toggles and region/fuel filters
 
 **L2 · Map** — an interactive map with dynamic circle markers. Clicking a facility opens a "lazy" popup card that refreshes to the latest live values on open.
 
-![Map layer — dynamic circle markers across the NEM](./assets/l2_map_layer1.png)
-
-![Facility popup card — latest live power, emissions, price, and demand](./assets/l2_map_layer2.png)
+Map layer — dynamic circle markers across the NEMFacility popup card — latest live power, emissions, price, and demand
 
 **L3 · Table** — real-time facility data in a scrollable table; clicking any column header sorts ascending/descending.
 
-![Table layer — sortable real-time facility metrics](./assets/l3_table_layer.png)
+Table layer — sortable real-time facility metrics
 
 **L4 · Info** — separates the *data record timestamp* from the *last refresh timestamp* to make late-arriving MQTT messages obvious.
 
-![Info layer — data-record vs last-refresh timestamps](./assets/l4_info_layer.jpg)
+Info layer — data-record vs last-refresh timestamps
 
 **Performance & correctness** — optimised for 500+ facilities with batched marker creation and selective updates (only redraw when values change), a snapshot pattern behind `mqtt_data_lock` to avoid race conditions, and re-run-safe teardown (old poll timers stopped and observers re-bound before rebuilding the layout).
 
@@ -142,16 +143,18 @@ CREATE TABLE fact_market (
 
 ## Tech Stack
 
-| Category | Tools |
-|---|---|
-| Language | Python 3.11+ |
-| Data processing | Polars |
-| Async | nest_asyncio |
-| Messaging | paho-mqtt, HiveMQ Cloud |
-| Database | PostgreSQL (Neon cloud), psycopg2 |
-| Dashboard | ipyleaflet, ipywidgets |
-| API | Open Electricity REST API |
-| Config | python-dotenv |
+
+| Category        | Tools                             |
+| --------------- | --------------------------------- |
+| Language        | Python 3.11+                      |
+| Data processing | Polars                            |
+| Async           | nest_asyncio                      |
+| Messaging       | paho-mqtt, HiveMQ Cloud           |
+| Database        | PostgreSQL (Neon cloud), psycopg2 |
+| Dashboard       | ipyleaflet, ipywidgets            |
+| API             | Open Electricity REST API         |
+| Config          | python-dotenv                     |
+
 
 ---
 
@@ -182,4 +185,4 @@ Run `energy-streaming-dashboard.ipynb`. The dashboard renders inline in Jupyter;
 
 ## Related — Part 1 of the Platform
 
-This project is the real-time layer of a two-part data platform. The batch foundation, [**Australian Energy ETL Pipeline**](../energy-etl-pipeline), ingests and geocodes multi-source government energy data into the `dim_facility` and `geo_regions` tables that this dashboard queries for map enrichment. Read that repo first to see how the serving layer is built; this repo shows how it's consumed in real time.
+This project is the real-time layer of a two-part data platform. The batch foundation, **[Australian Energy ETL Pipeline](../energy-etl-pipeline)**, ingests and geocodes multi-source government energy data into the `dim_facility` and `geo_regions` tables that this dashboard queries for map enrichment. Read that repo first to see how the serving layer is built; this repo shows how it's consumed in real time.
