@@ -1,6 +1,6 @@
-# Real-Time Energy Streaming Dashboard
+# Australian Energy Data Platform — Real-Time Streaming Dashboard
 
-> **Part 2 of the Australian Energy Data Platform** — the real-time layer.
+> **Part 2 of the Australian Energy Data Platform (Batch + Streaming)** — the real-time layer.
 > [➊ Batch ETL](../energy-etl-pipeline) → **Neon PostgreSQL + PostGIS** → ➋ Real-time streaming dashboard (this repo)
 >
 > This dashboard consumes the `dim_facility` and `geo_regions` tables built by the batch ETL pipeline to geospatially enrich a live MQTT stream of NEM market data.
