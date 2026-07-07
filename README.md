@@ -1,7 +1,7 @@
 # Australian Energy Data Platform — Real-Time Streaming Dashboard
 
 > **Part 2 of the Australian Energy Data Platform (Batch + Streaming)** — the real-time layer.
-> [➊ Batch ETL](../energy-etl-pipeline) → **Neon PostgreSQL + PostGIS** → ➋ Real-time streaming dashboard (this repo)
+> [➊ Batch ETL](https://github.com/chingyu13/energy-data-platform-batch-etl) → **Neon PostgreSQL + PostGIS** → ➋ Real-time streaming dashboard (this repo)
 >
 > This dashboard consumes the `dim_facility` and `geo_regions` tables built by the batch ETL pipeline to geospatially enrich a live MQTT stream of NEM market data.
 
@@ -38,7 +38,7 @@ flowchart TD
 
 The pipeline is split into four decoupled phases so ingestion, publishing, and visualisation never block each other:
 
-1. **Data Retrieval** — pulls 5-minute operational time series from the Open Electricity API and joins static asset metadata + spatial footprints from the Neon PostgreSQL database (built by the A1 [energy-etl-pipeline](../energy-etl-pipeline)).
+1. **Data Retrieval** — pulls 5-minute operational time series from the Open Electricity API and joins static asset metadata + spatial footprints from the Neon PostgreSQL database (built by the A1 [energy-etl-pipeline](https://github.com/chingyu13/energy-data-platform-batch-etl)).
 2. **Processing & Integration** — cleans the dataset and unifies it to a single facility-level grain.
 3. **MQTT Publisher** — reads the cached dataset chronologically and streams discrete JSON payloads to a cloud HiveMQ broker to mimic live sensor feeds.
 4. **Asynchronous Consumption & Visualisation** — an MQTT subscriber runs in a background thread and feeds an in-memory store that the dashboard polls in real time.
@@ -187,4 +187,4 @@ Run `energy-streaming-dashboard.ipynb`. The dashboard renders inline in Jupyter;
 
 ## Related — Part 1 of the Platform
 
-This project is the real-time layer of a two-part data platform. The batch foundation, **[Australian Energy ETL Pipeline](../energy-etl-pipeline)**, ingests and geocodes multi-source government energy data into the `dim_facility` and `geo_regions` tables that this dashboard queries for map enrichment. Read that repo first to see how the serving layer is built; this repo shows how it's consumed in real time.
+This project is the real-time layer of a two-part data platform. The batch foundation, **[Australian Energy ETL Pipeline](https://github.com/chingyu13/energy-data-platform-batch-etl)**, ingests and geocodes multi-source government energy data into the `dim_facility` and `geo_regions` tables that this dashboard queries for map enrichment. Read that repo first to see how the serving layer is built; this repo shows how it's consumed in real time.
